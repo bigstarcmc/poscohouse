@@ -78,6 +78,11 @@ function applyTeam(teamName) {
     if (settingsTeamLabel) {
         settingsTeamLabel.textContent = label;
     }
+
+    const calendarStatus = document.getElementById('calendarViewStatus');
+    if (calendarStatus) {
+        calendarStatus.textContent = `${label} · 4조2교대`;
+    }
 }
 
 teamButtons.forEach((button) => {
@@ -87,6 +92,39 @@ teamButtons.forEach((button) => {
         applyTeam(nextTeam);
     });
 });
+
+const calendarViewButtons = Array.from(document.querySelectorAll('[data-calendar-view]'));
+const calendarViewStatus = document.getElementById('calendarViewStatus');
+
+calendarViewButtons.forEach((button) => {
+    button.addEventListener('click', function () {
+        const view = button.dataset.calendarView || 'mine';
+        localStorage.setItem('poscohouse.calendarView', view);
+
+        calendarViewButtons.forEach((candidate) => {
+            candidate.classList.toggle('active', candidate === button);
+        });
+
+        if (calendarViewStatus) {
+            const selectedTeam = localStorage.getItem(storageKey) || 'C';
+            const label = teamMap[selectedTeam] || 'C조';
+            calendarViewStatus.textContent = view === 'all'
+                ? '4개조 전체 · 휴가/대근 표시'
+                : `${label} · 4조2교대`;
+        }
+    });
+});
+
+const savedCalendarView = localStorage.getItem('poscohouse.calendarView') || 'mine';
+const savedCalendarButton = calendarViewButtons.find((button) => button.dataset.calendarView === savedCalendarView) || calendarViewButtons[0];
+if (savedCalendarButton) {
+    savedCalendarButton.classList.add('active');
+    calendarViewButtons.forEach((button) => {
+        if (button !== savedCalendarButton) {
+            button.classList.remove('active');
+        }
+    });
+}
 
 applyTeam(currentTeam);
 
