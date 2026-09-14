@@ -49,3 +49,44 @@ navItems.forEach((item) => {
         });
     });
 });
+
+const profileTeam = document.querySelector('.profile-team');
+const settingsTeamLabel = document.getElementById('selectedTeamLabel');
+const teamButtons = Array.from(document.querySelectorAll('.team-button'));
+const storageKey = 'poscohouse.selectedTeam';
+const teamMap = {
+    A: 'A조',
+    B: 'B조',
+    C: 'C조',
+    D: 'D조'
+};
+
+const currentTeam = localStorage.getItem(storageKey) || 'C';
+
+function applyTeam(teamName) {
+    const teamKey = teamName || 'C';
+    const label = teamMap[teamKey] || 'C조';
+
+    teamButtons.forEach((button) => {
+        button.classList.toggle('active', button.dataset.team === teamKey);
+    });
+
+    if (profileTeam) {
+        profileTeam.textContent = `${label} · 4조2교대`;
+    }
+
+    if (settingsTeamLabel) {
+        settingsTeamLabel.textContent = label;
+    }
+}
+
+teamButtons.forEach((button) => {
+    button.addEventListener('click', function () {
+        const nextTeam = button.dataset.team || 'C';
+        localStorage.setItem(storageKey, nextTeam);
+        applyTeam(nextTeam);
+    });
+});
+
+applyTeam(currentTeam);
+

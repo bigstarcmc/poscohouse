@@ -783,6 +783,53 @@ a {
     color: var(--text-soft);
 }
 
+.team-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.team-button {
+    min-width: 68px;
+    padding: 11px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel-soft);
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: transform 180ms ease, background 180ms ease, color 180ms ease, border-color 180ms ease;
+}
+
+.team-button.active,
+.team-button:hover {
+    background: var(--green);
+    color: var(--panel);
+    border-color: var(--green);
+}
+
+.team-history-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+    color: var(--text-soft);
+    font-size: 12px;
+}
+
+.team-history-text {
+    font-weight: 800;
+}
+
+.team-history-date {
+    color: var(--muted);
+}
+
 .mini-list,
 .formula-list,
 .goal-list,

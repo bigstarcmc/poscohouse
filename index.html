@@ -656,13 +656,17 @@
                             <section class="card-panel">
                                 <div class="panel-title">
                                     <span>근무조 선택</span>
-                                    <span class="panel-action">C조</span>
+                                    <span class="panel-action" id="selectedTeamLabel">C조</span>
                                 </div>
                                 <div class="team-list">
-                                    <button class="team-button active">C조</button>
-                                    <button class="team-button">A조</button>
-                                    <button class="team-button">B조</button>
-                                    <button class="team-button">D조</button>
+                                    <button class="team-button" data-team="A">A조</button>
+                                    <button class="team-button" data-team="B">B조</button>
+                                    <button class="team-button active" data-team="C">C조</button>
+                                    <button class="team-button" data-team="D">D조</button>
+                                </div>
+                                <div class="team-history-bar">
+                                    <span class="team-history-text">조 변경 이력</span>
+                                    <span class="team-history-date">2026-09-28 기준</span>
                                 </div>
                             </section>
 
