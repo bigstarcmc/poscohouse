@@ -200,6 +200,11 @@ const balanceValue = document.getElementById('currentBalanceValue');
 const balanceAdjustButton = document.getElementById('balanceAdjustButton');
 const balanceAdjustmentInput = document.getElementById('balanceAdjustmentInput');
 
+const balanceStorageKey = 'poscohouse.currentBalance';
+const defaultBalance = 512500;
+const supabaseUrl = (window.POSCOHOUSE_SUPABASE_URL || 'https://flddhgciftiuoxuwnrzx.supabase.co').replace(/\/$/, '');
+const supabaseAnonKey = (window.POSCOHOUSE_SUPABASE_ANON_KEY || '').trim();
+
 function updateBalanceUI(value) {
     if (balanceValue) {
         const balance = Number(value) || 0;
@@ -211,18 +216,133 @@ function updateBalanceUI(value) {
     }
 }
 
+async function readBalanceFromSupabaseAccounts() {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return null;
+    }
+
+    const ownerId = localStorage.getItem('poscohouse.ownerId') || '';
+    const query = new URLSearchParams({
+        select: 'id,current_balance',
+        limit: '1'
+    });
+
+    if (ownerId) {
+        query.set('owner_id', `eq.${ownerId}`);
+    }
+
+    const url = `${supabaseUrl}/rest/v1/accounts?${query.toString()}`;
+
+    try {
+        const response = await fetch(url, {
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const rows = await response.json();
+        if (!Array.isArray(rows) || rows.length === 0) {
+            return null;
+        }
+
+        const balance = Number(rows[0].current_balance);
+        return Number.isFinite(balance) ? balance : null;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function writeBalanceToSupabaseAccounts(value) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return false;
+    }
+
+    const ownerId = localStorage.getItem('poscohouse.ownerId') || '';
+    const query = new URLSearchParams({
+        select: 'id,current_balance',
+        limit: '1'
+    });
+
+    if (ownerId) {
+        query.set('owner_id', `eq.${ownerId}`);
+    }
+
+    const readUrl = `${supabaseUrl}/rest/v1/accounts?${query.toString()}`;
+
+    try {
+        const readResponse = await fetch(readUrl, {
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json'
+            }
+        });
+
+        if (!readResponse.ok) {
+            return false;
+        }
+
+        const rows = await readResponse.json();
+        if (!Array.isArray(rows) || rows.length === 0) {
+            return false;
+        }
+
+        const row = rows[0];
+        const patchUrl = `${supabaseUrl}/rest/v1/accounts?id=eq.${encodeURIComponent(row.id)}`;
+        const patchResponse = await fetch(patchUrl, {
+            method: 'PATCH',
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal'
+            },
+            body: JSON.stringify({ current_balance: value })
+        });
+
+        return patchResponse.ok;
+    } catch (error) {
+        return false;
+    }
+}
+
 if (balanceAdjustButton && balanceAdjustmentInput) {
-    balanceAdjustButton.addEventListener('click', function () {
+    balanceAdjustButton.addEventListener('click', async function () {
         const change = Number(balanceAdjustmentInput.value) || 0;
-        const oldBalance = Number(localStorage.getItem('poscohouse.currentBalance') || '512500');
+        const oldBalance = Number(localStorage.getItem(balanceStorageKey) || String(defaultBalance));
         const nextBalance = oldBalance + change;
-        localStorage.setItem('poscohouse.currentBalance', String(nextBalance));
+
+        const synced = await writeBalanceToSupabaseAccounts(nextBalance);
+        if (!synced) {
+            localStorage.setItem(balanceStorageKey, String(nextBalance));
+        } else {
+            localStorage.setItem(balanceStorageKey, String(nextBalance));
+        }
+
         updateBalanceUI(nextBalance);
     });
 }
 
-const storedBalance = Number(localStorage.getItem('poscohouse.currentBalance') || '512500');
-updateBalanceUI(storedBalance);
+async function initializeBalance() {
+    const supabaseBalance = await readBalanceFromSupabaseAccounts();
+
+    if (typeof supabaseBalance === 'number') {
+        localStorage.setItem(balanceStorageKey, String(supabaseBalance));
+        updateBalanceUI(supabaseBalance);
+        return;
+    }
+
+    const storedBalance = Number(localStorage.getItem(balanceStorageKey) || String(defaultBalance));
+    updateBalanceUI(storedBalance);
+}
+
+initializeBalance();
 
 updateSalaryUI();
 applyTeam(currentTeam);
