@@ -126,5 +126,76 @@ if (savedCalendarButton) {
     });
 }
 
+const salaryConfig = {
+    basePay: 16700000,
+    mealAllowance: 1400000,
+    selfDesignSupport: 2000000,
+    jobEnvironmentAllowance: 400000,
+    shiftAllowanceRate: 0.08,
+    performancePayRate: 0.3333,
+    managementBonusRate: 1.0,
+    nightHourlyRate: 5700,
+    effectiveFrom: '2026-09-28'
+};
+
+function formatMoney(amount) {
+    return `₩${Math.round(amount / 10000) / 100}만`;
+}
+
+function calculateSalary() {
+    const basePay = salaryConfig.basePay;
+    const mealAllowance = salaryConfig.mealAllowance;
+    const selfDesignSupport = salaryConfig.selfDesignSupport;
+    const jobEnvironmentAllowance = salaryConfig.jobEnvironmentAllowance;
+    const shiftAllowance = basePay * salaryConfig.shiftAllowanceRate;
+    const performancePay = (basePay + mealAllowance) * salaryConfig.performancePayRate;
+    const nightHours = 56;
+    const nightAllowance = salaryConfig.nightHourlyRate * nightHours;
+
+    const estimated = basePay + mealAllowance + selfDesignSupport + jobEnvironmentAllowance + shiftAllowance + performancePay + nightAllowance;
+
+    return {
+        estimated,
+        basePay,
+        mealAllowance,
+        selfDesignSupport,
+        jobEnvironmentAllowance,
+        shiftAllowance,
+        performancePay,
+        nightAllowance
+    };
+}
+
+function updateSalaryUI() {
+    const result = calculateSalary();
+    const salaryTotal = document.getElementById('salaryTotal');
+    const salaryPredictionValue = document.getElementById('salaryPredictionValue');
+
+    if (salaryTotal) {
+        salaryTotal.textContent = formatMoney(result.estimated);
+    }
+
+    if (salaryPredictionValue) {
+        salaryPredictionValue.textContent = formatMoney(result.estimated);
+    }
+
+    const basePayLine = document.getElementById('basePayLine');
+    const mealAllowanceLine = document.getElementById('mealAllowanceLine');
+    const selfDesignLine = document.getElementById('selfDesignLine');
+    const jobEnvironmentLine = document.getElementById('jobEnvironmentLine');
+    const performanceLine = document.getElementById('performanceLine');
+    const shiftAllowanceLine = document.getElementById('shiftAllowanceLine');
+    const nightAllowanceLine = document.getElementById('nightAllowanceLine');
+
+    if (basePayLine) basePayLine.textContent = formatMoney(result.basePay);
+    if (mealAllowanceLine) mealAllowanceLine.textContent = formatMoney(result.mealAllowance);
+    if (selfDesignLine) selfDesignLine.textContent = formatMoney(result.selfDesignSupport);
+    if (jobEnvironmentLine) jobEnvironmentLine.textContent = formatMoney(result.jobEnvironmentAllowance);
+    if (performanceLine) performanceLine.textContent = formatMoney(result.performancePay);
+    if (shiftAllowanceLine) shiftAllowanceLine.textContent = formatMoney(result.shiftAllowance);
+    if (nightAllowanceLine) nightAllowanceLine.textContent = formatMoney(result.nightAllowance);
+}
+
+updateSalaryUI();
 applyTeam(currentTeam);
 
