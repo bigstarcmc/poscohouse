@@ -1,4 +1,4 @@
-const CACHE_NAME = 'poscohouse-cache-v4';
+const CACHE_NAME = 'poscohouse-cache-v3';
 const ASSETS = [
   './',
   './index.html',
