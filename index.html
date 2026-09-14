@@ -793,9 +793,11 @@
         </section>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
         window.POSCOHOUSE_SUPABASE_URL = 'https://flddhgciftiuoxuwnrzx.supabase.co';
         window.POSCOHOUSE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZGRoZ2NpZnRpdW94dXducnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MjE2MDgsImV4cCI6MjEwNDE5NzYwOH0.4SeE315UCYx3a64IncX943uTBZCaGNdP-pztgtBircQ';
+        window.supabaseClient = window.supabase.createClient(window.POSCOHOUSE_SUPABASE_URL, window.POSCOHOUSE_SUPABASE_ANON_KEY);
     </script>
     <script src="app.js"></script>
     <script>

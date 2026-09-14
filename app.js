@@ -20,29 +20,18 @@ loginForm.addEventListener('submit', async function (event) {
     }
 
     try {
-        const authUrl = `${supabaseUrl}/auth/v1/token?grant_type=password`;
-        const authResponse = await fetch(authUrl, {
-            method: 'POST',
-            headers: {
-                apikey: supabaseAnonKey,
-                Authorization: `Bearer ${supabaseAnonKey}`,
-                'Content-Type': 'application/json',
-                Accept: 'application/json'
-            },
-            body: JSON.stringify({ email, password })
-        });
-
-        if (!authResponse.ok) {
-            loginError.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.';
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) {
+            loginError.textContent = error.message || '이메일 또는 비밀번호가 올바르지 않습니다.';
             return;
         }
 
-        const authData = await authResponse.json();
-        if (authData.access_token) {
-            localStorage.setItem('poscohouse.accessToken', authData.access_token);
-            if (authData.refresh_token) {
-                localStorage.setItem('poscohouse.refreshToken', authData.refresh_token);
-            }
+        if (data?.session?.access_token) {
+            localStorage.setItem('poscohouse.accessToken', data.session.access_token);
+        }
+
+        if (data?.session?.refresh_token) {
+            localStorage.setItem('poscohouse.refreshToken', data.session.refresh_token);
         }
 
         loginScreen.classList.add('hidden');
