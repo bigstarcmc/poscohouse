@@ -483,7 +483,94 @@ const defaultBalance = 512500;
 const supabaseUrl = (window.POSCOHOUSE_SUPABASE_URL || 'https://flddhgciftiuoxuwnrzx.supabase.co').replace(/\/$/, '');
 const supabaseAnonKey = (window.POSCOHOUSE_SUPABASE_ANON_KEY || '').trim();
 
+async function readAccountsFromSupabase() {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('readAccountsFromSupabase: missing Supabase URL or anon key.');
+        return [];
+    }
+
+    const ownerId = await getAuthenticatedUserId();
+    if (!ownerId) {
+        console.error('readAccountsFromSupabase: no authenticated user id available.');
+        return [];
+    }
+
+    try {
+        const query = new URLSearchParams({
+            select: 'id,name,type,institution,current_balance',
+            owner_id: `eq.${ownerId}`,
+            order: 'id.asc'
+        });
+
+        const response = await fetch(`${supabaseUrl}/rest/v1/accounts?${query.toString()}`, {
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            console.error('readAccountsFromSupabase: failed with status', response.status);
+            return [];
+        }
+
+        const rows = await response.json();
+        return Array.isArray(rows) ? rows : [];
+    } catch (error) {
+        console.error('readAccountsFromSupabase: unexpected error:', error);
+        return [];
+    }
+}
+
+function renderAccountsToSettings(rows) {
+    const settingsAccountList = document.getElementById('settingsAccountList');
+    if (!settingsAccountList) {
+        return;
+    }
+
+    settingsAccountList.innerHTML = '';
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+        const emptyRow = document.createElement('div');
+        emptyRow.className = 'setting-row';
+        emptyRow.innerHTML = '<span>등록된 계좌가 없습니다</span><span class="status-dot muted"></span>';
+        settingsAccountList.appendChild(emptyRow);
+        return;
+    }
+
+    rows.forEach((row) => {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'setting-row';
+
+        const nameEl = document.createElement('span');
+        nameEl.textContent = row.name || '계좌';
+
+        const statusEl = document.createElement('span');
+        statusEl.className = 'status-dot ok';
+
+        const deleteButton = document.createElement('button');
+        deleteButton.type = 'button';
+        deleteButton.className = 'settings-row-delete';
+        deleteButton.dataset.accountDeleteId = row.id;
+        deleteButton.textContent = '삭제';
+        deleteButton.addEventListener('click', async function () {
+            const ok = await deleteAccount(row.id);
+            if (ok) {
+                const updated = await readAccountsFromSupabase();
+                renderAccountsToSettings(updated);
+            }
+        });
+
+        rowEl.appendChild(nameEl);
+        rowEl.appendChild(statusEl);
+        rowEl.appendChild(deleteButton);
+        settingsAccountList.appendChild(rowEl);
+    });
+}
+
 async function addAccount(name, type, institution) {
+
     if (!supabaseUrl || !supabaseAnonKey) {
         console.error('addAccount: missing Supabase URL or anon key.');
         return null;
@@ -521,15 +608,7 @@ async function addAccount(name, type, institution) {
             return null;
         }
 
-        const rows = await fetch(`${supabaseUrl}/rest/v1/accounts?owner_id=eq.${encodeURIComponent(ownerId)}&name=eq.${encodeURIComponent(name)}&limit=1`, {
-            headers: {
-                apikey: supabaseAnonKey,
-                Authorization: `Bearer ${supabaseAnonKey}`,
-                Accept: 'application/json'
-            }
-        }).then((res) => res.json());
-
-        return Array.isArray(rows) && rows.length ? rows[0] : null;
+        return await readAccountsFromSupabase();
     } catch (error) {
         console.error('addAccount: unexpected error:', error);
         return null;
