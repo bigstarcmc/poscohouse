@@ -4,23 +4,52 @@ const loginForm = document.getElementById('loginForm');
 const loginError = document.getElementById('loginError');
 const logoutButton = document.getElementById('logoutButton');
 
-loginForm.addEventListener('submit', function (event) {
+loginForm.addEventListener('submit', async function (event) {
     event.preventDefault();
-    const userId = document.getElementById('userId').value.trim();
+    const email = document.getElementById('email').value.trim().toLowerCase();
     const password = document.getElementById('password').value.trim();
 
-    if (!userId || !password) {
-        loginError.textContent = '아이디와 비밀번호를 입력해주세요.';
+    if (!email || !password) {
+        loginError.textContent = '이메일과 비밀번호를 입력해주세요.';
         return;
     }
 
-    if (userId.length < 2 || password.length < 3) {
-        loginError.textContent = '로그인 정보를 다시 확인해주세요.';
+    if (!email.includes('@') || email.length < 5 || password.length < 3) {
+        loginError.textContent = '이메일 형식과 비밀번호를 다시 확인해주세요.';
         return;
     }
 
-    loginScreen.classList.add('hidden');
-    appScreen.classList.remove('hidden');
+    try {
+        const authUrl = `${supabaseUrl}/auth/v1/token?grant_type=password`;
+        const authResponse = await fetch(authUrl, {
+            method: 'POST',
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                'Content-Type': 'application/json',
+                Accept: 'application/json'
+            },
+            body: JSON.stringify({ email, password })
+        });
+
+        if (!authResponse.ok) {
+            loginError.textContent = '이메일 또는 비밀번호가 올바르지 않습니다.';
+            return;
+        }
+
+        const authData = await authResponse.json();
+        if (authData.access_token) {
+            localStorage.setItem('poscohouse.accessToken', authData.access_token);
+            if (authData.refresh_token) {
+                localStorage.setItem('poscohouse.refreshToken', authData.refresh_token);
+            }
+        }
+
+        loginScreen.classList.add('hidden');
+        appScreen.classList.remove('hidden');
+    } catch (error) {
+        loginError.textContent = '로그인 처리 중 오류가 발생했습니다.';
+    }
 });
 
 logoutButton.addEventListener('click', function () {
@@ -47,6 +76,10 @@ navItems.forEach((item) => {
         Object.entries(panels).forEach(([key, panel]) => {
             panel.classList.toggle('active', key === target);
         });
+
+        if (target === 'salary') {
+            initializeSalaryConfig();
+        }
     });
 });
 

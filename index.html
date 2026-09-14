@@ -56,15 +56,15 @@
 
                             <form id="loginForm" class="login-form">
                                 <div class="form-group">
-                                    <label for="userId">아이디</label>
-                                    <input id="userId" name="userId" type="text" autocomplete="username"
-                                        placeholder="예: jinhang" value="jinhang" />
+                                    <label for="email">이메일</label>
+                                    <input id="email" name="email" type="email" autocomplete="username"
+                                        placeholder="예: user@example.com" />
                                 </div>
 
                                 <div class="form-group">
                                     <label for="password">비밀번호</label>
                                     <input id="password" name="password" type="password" autocomplete="current-password"
-                                        placeholder="비밀번호" value="posco123" />
+                                        placeholder="비밀번호" />
                                 </div>
 
                                 <div class="login-options">
@@ -510,7 +510,7 @@
                                     <span>실수령 예측</span>
                                     <span class="panel-action">9월</span>
                                 </div>
-                                <div class="salary-total" id="salaryTotal">₩371만 5천</div>
+                                <div class="salary-total" id="salaryTotal"></div>
                                 <div class="salary-chart">
                                     <div class="chart-bars">
                                         <span class="chart-bar" style="height:38%;"></span>
@@ -525,7 +525,7 @@
                                 <div class="salary-metrics">
                                     <div>
                                         <span class="metric-label">예상 수령액</span>
-                                        <span class="metric-value" id="salaryPredictionValue">₩371.5만</span>
+                                        <span class="metric-value" id="salaryPredictionValue"></span>
                                     </div>
                                     <div>
                                         <span class="metric-label">확정액</span>
@@ -540,19 +540,19 @@
                                     <span class="panel-action">기준</span>
                                 </div>
                                 <div class="formula-list">
-                                    <div class="formula-row"><span>직무기준급</span><span id="basePayLine">₩167만</span></div>
-                                    <div class="formula-row"><span>중식비</span><span id="mealAllowanceLine">₩14만</span>
+                                    <div class="formula-row"><span>직무기준급</span><span id="basePayLine"></span></div>
+                                    <div class="formula-row"><span>중식비</span><span id="mealAllowanceLine"></span>
                                     </div>
-                                    <div class="formula-row"><span>자기설계지원금</span><span id="selfDesignLine">₩20만</span>
+                                    <div class="formula-row"><span>자기설계지원금</span><span id="selfDesignLine"></span>
                                     </div>
-                                    <div class="formula-row"><span>직무환경수당</span><span id="jobEnvironmentLine">₩4만</span>
+                                    <div class="formula-row"><span>직무환경수당</span><span id="jobEnvironmentLine"></span>
                                     </div>
-                                    <div class="formula-row"><span>업적급</span><span id="performanceLine">₩55만</span>
+                                    <div class="formula-row"><span>업적급</span><span id="performanceLine"></span>
                                     </div>
-                                    <div class="formula-row"><span>교대근무수당</span><span
-                                            id="shiftAllowanceLine">₩13.4만</span></div>
-                                    <div class="formula-row"><span>야간수당</span><span
-                                            id="nightAllowanceLine">₩29.5만</span></div>
+                                    <div class="formula-row"><span>교대근무수당</span><span id="shiftAllowanceLine"></span>
+                                    </div>
+                                    <div class="formula-row"><span>야간수당</span><span id="nightAllowanceLine"></span>
+                                    </div>
                                 </div>
                             </section>
                         </div>
@@ -727,39 +727,48 @@
                                     <div class="salary-settings-grid">
                                         <div class="salary-setting-row">
                                             <label for="salaryBasePayInput">직무기준급</label>
-                                            <input type="number" id="salaryBasePayInput" value="16700000" min="0" step="1000">
+                                            <input type="number" id="salaryBasePayInput" placeholder="직무기준급" min="0"
+                                                step="1000">
                                         </div>
                                         <div class="salary-setting-row">
                                             <label for="salaryMealAllowanceInput">중식비</label>
-                                            <input type="number" id="salaryMealAllowanceInput" value="1400000" min="0" step="1000">
+                                            <input type="number" id="salaryMealAllowanceInput" placeholder="중식비" min="0"
+                                                step="1000">
                                         </div>
                                         <div class="salary-setting-row">
                                             <label for="salarySelfDesignSupportInput">자기설계지원금</label>
-                                            <input type="number" id="salarySelfDesignSupportInput" value="2000000" min="0" step="1000">
+                                            <input type="number" id="salarySelfDesignSupportInput" placeholder="자기설계지원금"
+                                                min="0" step="1000">
                                         </div>
                                         <div class="salary-setting-row">
                                             <label for="salaryJobEnvironmentAllowanceInput">직무환경수당</label>
-                                            <input type="number" id="salaryJobEnvironmentAllowanceInput" value="400000" min="0" step="1000">
+                                            <input type="number" id="salaryJobEnvironmentAllowanceInput"
+                                                placeholder="직무환경수당" min="0" step="1000">
                                         </div>
                                         <div class="salary-setting-row">
                                             <label for="salaryShiftAllowanceRateInput">교대수당율</label>
-                                            <input type="number" id="salaryShiftAllowanceRateInput" value="0.08" min="0" step="0.01">
+                                            <input type="number" id="salaryShiftAllowanceRateInput" placeholder="교대수당율"
+                                                min="0" step="0.01">
                                         </div>
                                         <div class="salary-setting-row">
                                             <label for="salaryPerformancePayRateInput">업적급율</label>
-                                            <input type="number" id="salaryPerformancePayRateInput" value="0.3333" min="0" step="0.0001">
+                                            <input type="number" id="salaryPerformancePayRateInput" placeholder="업적급율"
+                                                min="0" step="0.0001">
                                         </div>
                                         <div class="salary-setting-row">
                                             <label for="salaryManagementBonusRateInput">경영성과금율</label>
-                                            <input type="number" id="salaryManagementBonusRateInput" value="1.0" min="0" step="0.01">
+                                            <input type="number" id="salaryManagementBonusRateInput"
+                                                placeholder="경영성과금율" min="0" step="0.01">
                                         </div>
                                         <div class="salary-setting-row">
                                             <label for="salaryNightHourlyRateInput">야간시급</label>
-                                            <input type="number" id="salaryNightHourlyRateInput" value="5700" min="0" step="100">
+                                            <input type="number" id="salaryNightHourlyRateInput" placeholder="야간시급"
+                                                min="0" step="100">
                                         </div>
                                     </div>
                                     <div class="salary-settings-actions">
-                                        <button type="button" class="primary-button small-button" id="saveSalaryConfigButton">저장</button>
+                                        <button type="button" class="primary-button small-button"
+                                            id="saveSalaryConfigButton">저장</button>
                                         <span id="salaryConfigSaveStatus" class="status-text"></span>
                                     </div>
                                 </div>
@@ -784,6 +793,10 @@
         </section>
     </div>
 
+    <script>
+        window.POSCOHOUSE_SUPABASE_URL = 'https://flddhgciftiuoxuwnrzx.supabase.co';
+        window.POSCOHOUSE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsZGRoZ2NpZnRpdW94dXducnp4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2MjE2MDgsImV4cCI6MjEwNDE5NzYwOH0.4SeE315UCYx3a64IncX943uTBZCaGNdP-pztgtBircQ';
+    </script>
     <script src="app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
@@ -794,17 +807,6 @@
             });
         }
     </script>
-</body>
-
-<script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./service-worker.js')
-                .then(() => console.log('Service worker registered successfully.'))
-                .catch((error) => console.log('Service worker registration failed:', error));
-        });
-    }
-</script>
 </body>
 
 </html>
