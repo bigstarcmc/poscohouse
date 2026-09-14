@@ -477,6 +477,7 @@ const balanceValue = document.getElementById('currentBalanceValue');
 const balanceAdjustButton = document.getElementById('balanceAdjustButton');
 const balanceAdjustmentInput = document.getElementById('balanceAdjustmentInput');
 const salaryConfigSaveStatus = document.getElementById('salaryConfigSaveStatus');
+const addAccountButton = document.getElementById('addAccountButton');
 
 const balanceStorageKey = 'poscohouse.currentBalance';
 const defaultBalance = 512500;
@@ -767,6 +768,23 @@ if (balanceAdjustButton && balanceAdjustmentInput) {
     });
 }
 
+if (addAccountButton) {
+    addAccountButton.addEventListener('click', async function () {
+        const name = prompt('추가할 계좌명을 입력하세요', '새 계좌');
+        if (!name || !name.trim()) {
+            return;
+        }
+
+        const type = prompt('계좌 유형을 입력하세요 (예: 급여통장/저축/카드)', '급여통장');
+        const institution = prompt('금융기관명을 입력하세요', 'POSCO');
+
+        const rows = await addAccount(name.trim(), type || '급여통장', institution || 'POSCO');
+        if (Array.isArray(rows)) {
+            renderAccountsToSettings(rows);
+        }
+    });
+}
+
 async function initializeBalance() {
     const supabaseBalance = await readBalanceFromSupabaseAccounts();
 
@@ -798,6 +816,12 @@ if (saveSalaryConfigButton) {
     saveSalaryConfigButton.addEventListener('click', saveSalaryConfigFromForm);
 }
 
+async function initializeSettingsAccounts() {
+    const rows = await readAccountsFromSupabase();
+    renderAccountsToSettings(rows);
+}
+
 initializeSalaryConfig();
+initializeSettingsAccounts();
 applyTeam(currentTeam);
 
