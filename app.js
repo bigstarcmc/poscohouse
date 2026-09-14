@@ -56,6 +56,31 @@ const panels = {
     settings: document.getElementById('panel-settings')
 };
 
+async function getAuthenticatedUserId() {
+    if (!window.supabaseClient || !window.supabaseClient.auth || !window.supabaseClient.auth.getUser) {
+        console.error('getAuthenticatedUserId: supabaseClient.auth.getUser() not available.');
+        return null;
+    }
+
+    try {
+        const { data, error } = await window.supabaseClient.auth.getUser();
+        if (error) {
+            console.error('getAuthenticatedUserId: auth.getUser() failed:', error.message || error);
+            return null;
+        }
+
+        if (!data?.user?.id) {
+            console.error('getAuthenticatedUserId: logged-in user id missing.');
+            return null;
+        }
+
+        return data.user.id;
+    } catch (error) {
+        console.error('getAuthenticatedUserId: unexpected error while reading auth user id:', error);
+        return null;
+    }
+}
+
 navItems.forEach((item) => {
     item.addEventListener('click', function () {
         const target = item.dataset.tab;
@@ -148,7 +173,32 @@ if (savedCalendarButton) {
     });
 }
 
-const salaryProfileName = '진한';
+const calendarMonthLabel = document.querySelector('.month-label');
+const prevMonthButton = document.querySelector('#prevMonthButton');
+const nextMonthButton = document.querySelector('#nextMonthButton');
+let calendarMonth = new Date(2026, 8, 1);
+
+function updateCalendarMonthLabel() {
+    if (calendarMonthLabel) {
+        calendarMonthLabel.textContent = `${calendarMonth.getFullYear()}년 ${calendarMonth.getMonth() + 1}월`;
+    }
+}
+
+if (prevMonthButton) {
+    prevMonthButton.addEventListener('click', function () {
+        calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+        updateCalendarMonthLabel();
+    });
+}
+
+if (nextMonthButton) {
+    nextMonthButton.addEventListener('click', function () {
+        calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+        updateCalendarMonthLabel();
+    });
+}
+
+updateCalendarMonthLabel();
 
 const defaultSalaryConfig = {
     basePay: 16700000,
@@ -166,39 +216,24 @@ let salaryConfig = defaultSalaryConfig;
 
 async function readSalaryConfigFromSupabase() {
     if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('readSalaryConfigFromSupabase: missing Supabase URL or anon key.');
+        return null;
+    }
+
+    const ownerId = await getAuthenticatedUserId();
+    if (!ownerId) {
+        console.error('readSalaryConfigFromSupabase: no authenticated user id available; cannot read salary_config by owner_id.');
         return null;
     }
 
     try {
-        const profileQuery = new URLSearchParams({
-            select: 'id',
-            name: `eq.${salaryProfileName}`,
-            limit: '1'
-        });
-        const profileResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?${profileQuery.toString()}`, {
-            headers: {
-                apikey: supabaseAnonKey,
-                Authorization: `Bearer ${supabaseAnonKey}`,
-                Accept: 'application/json'
-            }
-        });
-
-        if (!profileResponse.ok) {
-            return null;
-        }
-
-        const profileRows = await profileResponse.json();
-        if (!Array.isArray(profileRows) || profileRows.length === 0) {
-            return null;
-        }
-
-        const ownerId = profileRows[0].id;
         const configQuery = new URLSearchParams({
             select: 'base_pay,meal_allowance,self_design_support,job_environment_allowance,shift_allowance_rate,performance_pay_rate,management_bonus_rate,night_hourly_rate,effective_from',
             owner_id: `eq.${ownerId}`,
             order: 'effective_from.desc',
             limit: '1'
         });
+
         const configResponse = await fetch(`${supabaseUrl}/rest/v1/salary_config?${configQuery.toString()}`, {
             headers: {
                 apikey: supabaseAnonKey,
@@ -208,11 +243,13 @@ async function readSalaryConfigFromSupabase() {
         });
 
         if (!configResponse.ok) {
+            console.error('readSalaryConfigFromSupabase: salary_config fetch failed with status', configResponse.status, 'for owner_id', ownerId);
             return null;
         }
 
         const configRows = await configResponse.json();
         if (!Array.isArray(configRows) || configRows.length === 0) {
+            console.error('readSalaryConfigFromSupabase: no salary_config row found for owner_id', ownerId);
             return null;
         }
 
@@ -229,6 +266,7 @@ async function readSalaryConfigFromSupabase() {
             effectiveFrom: row.effective_from
         };
     } catch (error) {
+        console.error('readSalaryConfigFromSupabase: unexpected fetch error:', error);
         return null;
     }
 }
@@ -344,41 +382,6 @@ async function readCurrentSalaryConfigRowForProfile(ownerId) {
     return row;
 }
 
-async function getProfileIdForName(name) {
-    if (!supabaseUrl || !supabaseAnonKey) {
-        return null;
-    }
-
-    try {
-        const query = new URLSearchParams({
-            select: 'id',
-            name: `eq.${name}`,
-            limit: '1'
-        });
-
-        const response = await fetch(`${supabaseUrl}/rest/v1/profiles?${query.toString()}`, {
-            headers: {
-                apikey: supabaseAnonKey,
-                Authorization: `Bearer ${supabaseAnonKey}`,
-                Accept: 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            return null;
-        }
-
-        const rows = await response.json();
-        if (!Array.isArray(rows) || rows.length === 0) {
-            return null;
-        }
-
-        return rows[0].id || null;
-    } catch (error) {
-        return null;
-    }
-}
-
 async function saveSalaryConfigFromForm() {
     if (!supabaseUrl || !supabaseAnonKey) {
         if (salaryConfigSaveStatus) {
@@ -387,10 +390,10 @@ async function saveSalaryConfigFromForm() {
         return;
     }
 
-    const profileId = await getProfileIdForName(salaryProfileName);
-    if (!profileId) {
+    const ownerId = await getAuthenticatedUserId();
+    if (!ownerId) {
         if (salaryConfigSaveStatus) {
-            salaryConfigSaveStatus.textContent = '진한 프로필을 찾지 못했습니다.';
+            salaryConfigSaveStatus.textContent = '로그인한 사용자를 찾지 못했습니다.';
         }
         return;
     }
@@ -407,9 +410,9 @@ async function saveSalaryConfigFromForm() {
         effectiveFrom: '2026-09-28'
     };
 
-    const existingRow = await readCurrentSalaryConfigRowForProfile(profileId);
+    const existingRow = await readCurrentSalaryConfigRowForProfile(ownerId);
     const payload = {
-        owner_id: profileId,
+        owner_id: ownerId,
         base_pay: config.basePay,
         meal_allowance: config.mealAllowance,
         self_design_support: config.selfDesignSupport,
@@ -479,6 +482,87 @@ const balanceStorageKey = 'poscohouse.currentBalance';
 const defaultBalance = 512500;
 const supabaseUrl = (window.POSCOHOUSE_SUPABASE_URL || 'https://flddhgciftiuoxuwnrzx.supabase.co').replace(/\/$/, '');
 const supabaseAnonKey = (window.POSCOHOUSE_SUPABASE_ANON_KEY || '').trim();
+
+async function addAccount(name, type, institution) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('addAccount: missing Supabase URL or anon key.');
+        return null;
+    }
+
+    const ownerId = await getAuthenticatedUserId();
+    if (!ownerId) {
+        console.error('addAccount: no authenticated user id available for owner_id.');
+        return null;
+    }
+
+    const payload = {
+        owner_id: ownerId,
+        name,
+        type,
+        institution,
+        current_balance: 0
+    };
+
+    try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/accounts`, {
+            method: 'POST',
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal',
+                Accept: 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            console.error('addAccount: insert failed with', response.status);
+            return null;
+        }
+
+        const rows = await fetch(`${supabaseUrl}/rest/v1/accounts?owner_id=eq.${encodeURIComponent(ownerId)}&name=eq.${encodeURIComponent(name)}&limit=1`, {
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json'
+            }
+        }).then((res) => res.json());
+
+        return Array.isArray(rows) && rows.length ? rows[0] : null;
+    } catch (error) {
+        console.error('addAccount: unexpected error:', error);
+        return null;
+    }
+}
+
+async function deleteAccount(accountId) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('deleteAccount: missing Supabase URL or anon key.');
+        return false;
+    }
+
+    try {
+        const response = await fetch(`${supabaseUrl}/rest/v1/accounts?id=eq.${encodeURIComponent(accountId)}`, {
+            method: 'DELETE',
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            console.error('deleteAccount: delete failed with', response.status);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('deleteAccount: unexpected error:', error);
+        return false;
+    }
+}
 
 function updateBalanceUI(value) {
     if (balanceValue) {
