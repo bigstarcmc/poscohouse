@@ -1091,6 +1091,56 @@ a {
     gap: 16px;
 }
 
+.journal-panel {
+    margin-top: 22px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+}
+
+.journal-title {
+    padding-bottom: 12px;
+}
+
+.journal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: 12px;
+}
+
+.journal-add-button {
+    min-height: 34px;
+    padding: 0 14px;
+}
+
+.journal-list {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.journal-entry {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--panel-soft);
+}
+
+.journal-type {
+    color: var(--green);
+    font-weight: 800;
+    font-size: 11px;
+}
+
+.journal-summary {
+    color: var(--text-soft);
+    font-size: 11px;
+}
+
 .event-item {
     display: flex;
     align-items: center;
