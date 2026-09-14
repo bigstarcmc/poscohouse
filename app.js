@@ -126,7 +126,9 @@ if (savedCalendarButton) {
     });
 }
 
-const salaryConfig = {
+const salaryProfileName = '진한';
+
+const defaultSalaryConfig = {
     basePay: 16700000,
     mealAllowance: 1400000,
     selfDesignSupport: 2000000,
@@ -137,6 +139,77 @@ const salaryConfig = {
     nightHourlyRate: 5700,
     effectiveFrom: '2026-09-28'
 };
+
+let salaryConfig = defaultSalaryConfig;
+
+async function readSalaryConfigFromSupabase() {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return null;
+    }
+
+    try {
+        const profileQuery = new URLSearchParams({
+            select: 'id',
+            name: `eq.${salaryProfileName}`,
+            limit: '1'
+        });
+        const profileResponse = await fetch(`${supabaseUrl}/rest/v1/profiles?${profileQuery.toString()}`, {
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json'
+            }
+        });
+
+        if (!profileResponse.ok) {
+            return null;
+        }
+
+        const profileRows = await profileResponse.json();
+        if (!Array.isArray(profileRows) || profileRows.length === 0) {
+            return null;
+        }
+
+        const ownerId = profileRows[0].id;
+        const configQuery = new URLSearchParams({
+            select: 'base_pay,meal_allowance,self_design_support,job_environment_allowance,shift_allowance_rate,performance_pay_rate,management_bonus_rate,night_hourly_rate,effective_from',
+            owner_id: `eq.${ownerId}`,
+            order: 'effective_from.desc',
+            limit: '1'
+        });
+        const configResponse = await fetch(`${supabaseUrl}/rest/v1/salary_config?${configQuery.toString()}`, {
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json'
+            }
+        });
+
+        if (!configResponse.ok) {
+            return null;
+        }
+
+        const configRows = await configResponse.json();
+        if (!Array.isArray(configRows) || configRows.length === 0) {
+            return null;
+        }
+
+        const row = configRows[0];
+        return {
+            basePay: Number(row.base_pay),
+            mealAllowance: Number(row.meal_allowance),
+            selfDesignSupport: Number(row.self_design_support),
+            jobEnvironmentAllowance: Number(row.job_environment_allowance),
+            shiftAllowanceRate: Number(row.shift_allowance_rate),
+            performancePayRate: Number(row.performance_pay_rate),
+            managementBonusRate: Number(row.management_bonus_rate),
+            nightHourlyRate: Number(row.night_hourly_rate),
+            effectiveFrom: row.effective_from
+        };
+    } catch (error) {
+        return null;
+    }
+}
 
 function formatMoney(amount) {
     return `₩${Math.round(amount / 10000) / 100}만`;
@@ -344,6 +417,14 @@ async function initializeBalance() {
 
 initializeBalance();
 
-updateSalaryUI();
+async function initializeSalaryConfig() {
+    const remoteConfig = await readSalaryConfigFromSupabase();
+    if (remoteConfig) {
+        salaryConfig = remoteConfig;
+    }
+    updateSalaryUI();
+}
+
+initializeSalaryConfig();
 applyTeam(currentTeam);
 
