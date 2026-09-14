@@ -4,6 +4,115 @@ const loginForm = document.getElementById('loginForm');
 const loginError = document.getElementById('loginError');
 const logoutButton = document.getElementById('logoutButton');
 
+const calendarGrid = document.getElementById('calendarGrid');
+const calendarMonthLabel = document.querySelector('.month-label');
+const prevMonthButton = document.getElementById('prevMonthButton');
+const nextMonthButton = document.getElementById('nextMonthButton');
+const calendarViewButtons = Array.from(document.querySelectorAll('[data-calendar-view]'));
+const calendarViewStatus = document.getElementById('calendarViewStatus');
+
+const shiftPattern = ['day', 'day', 'off', 'off', 'night', 'night', 'off', 'off'];
+const teamOffsets = { A: 0, B: 1, C: 2, D: 3 };
+const shiftLabels = { day: '주', night: '야', off: '휴' };
+const shiftColors = { day: 'day', night: 'night', off: 'off' };
+let calendarMonth = new Date(2026, 8, 1);
+let currentCalendarView = 'mine';
+let currentCalendarTeam = 'C';
+
+function ymd(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getShiftType(dateStr, team = 'C') {
+    const anchor = new Date(2026, 8, 28, 0, 0, 0);
+    const date = new Date(`${dateStr}T00:00:00+09:00`);
+    const offsetDays = Math.round((date - anchor) / 86400000);
+    const base = ((offsetDays + (teamOffsets[team] || 0)) % shiftPattern.length + shiftPattern.length) % shiftPattern.length;
+    return shiftPattern[base] || 'off';
+}
+
+function renderCalendar() {
+    if (!calendarGrid) return;
+
+    const monthStart = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const startDay = monthStart.getDay();
+    const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
+    const prevDays = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 0).getDate();
+
+    calendarGrid.innerHTML = '';
+    const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+    weekdays.forEach((weekday) => {
+        const el = document.createElement('div');
+        el.className = 'calendar-weekday';
+        el.textContent = weekday;
+        calendarGrid.appendChild(el);
+    });
+
+    const todayYmd = ymd(new Date());
+    const monthYmdBase = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth() + 1).padStart(2, '0')}`;
+    let displayed = 0;
+
+    for (let i = 0; i < startDay; i++) {
+        const el = document.createElement('div');
+        el.className = 'calendar-date muted';
+        const dom = prevDays - startDay + i + 1;
+        el.textContent = String(dom);
+        calendarGrid.appendChild(el);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), day);
+        const dateStr = ymd(d);
+        const shift = getShiftType(dateStr, currentCalendarTeam);
+        const el = document.createElement('div');
+        el.className = 'calendar-date';
+        if (dateStr === todayYmd) {
+            el.classList.add('today');
+        }
+        if (shift === 'off') {
+            el.classList.add('off');
+        }
+        el.innerHTML = `${day}<span class="shift-dot ${shiftColors[shift]}">${shiftLabels[shift]}</span>`;
+        el.dataset.date = dateStr;
+        el.addEventListener('click', () => {
+            console.log('calendar date clicked:', dateStr, 'shift', shift, 'view', currentCalendarView);
+        });
+        calendarGrid.appendChild(el);
+        displayed++;
+    }
+
+    const remaining = 42 - (startDay + daysInMonth);
+    for (let day = 1; day <= remaining; day++) {
+        const el = document.createElement('div');
+        el.className = 'calendar-date muted';
+        el.textContent = String(day);
+        calendarGrid.appendChild(el);
+    }
+
+    if (calendarMonthLabel) {
+        calendarMonthLabel.textContent = `${calendarMonth.getFullYear()}년 ${calendarMonth.getMonth() + 1}월`;
+    }
+}
+
+if (prevMonthButton) {
+    prevMonthButton.addEventListener('click', function () {
+        calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1);
+        console.log('prevMonthButton clicked:', ymd(calendarMonth));
+        renderCalendar();
+    });
+}
+
+if (nextMonthButton) {
+    nextMonthButton.addEventListener('click', function () {
+        calendarMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1);
+        console.log('nextMonthButton clicked:', ymd(calendarMonth));
+        renderCalendar();
+    });
+}
+
 loginForm.addEventListener('submit', async function (event) {
     event.preventDefault();
     const email = document.getElementById('email').value.trim().toLowerCase();
@@ -136,16 +245,17 @@ teamButtons.forEach((button) => {
     button.addEventListener('click', function () {
         const nextTeam = button.dataset.team || 'C';
         localStorage.setItem(storageKey, nextTeam);
+        currentCalendarTeam = nextTeam;
         applyTeam(nextTeam);
+        renderCalendar();
+        console.log('teamButtons clicked:', nextTeam);
     });
 });
-
-const calendarViewButtons = Array.from(document.querySelectorAll('[data-calendar-view]'));
-const calendarViewStatus = document.getElementById('calendarViewStatus');
 
 calendarViewButtons.forEach((button) => {
     button.addEventListener('click', function () {
         const view = button.dataset.calendarView || 'mine';
+        currentCalendarView = view;
         localStorage.setItem('poscohouse.calendarView', view);
 
         calendarViewButtons.forEach((candidate) => {
@@ -159,6 +269,14 @@ calendarViewButtons.forEach((button) => {
                 ? '4개조 전체 · 휴가/대근 표시'
                 : `${label} · 4조2교대`;
         }
+
+        if (view === 'all') {
+            console.log('calendarViewButtons clicked: showing all teams row-view; A/B/C/D row view active');
+        } else {
+            console.log('calendarViewButtons clicked: showing mine team view');
+        }
+
+        renderCalendar();
     });
 });
 
@@ -327,6 +445,67 @@ function updateSalaryUI() {
     if (performanceLine) performanceLine.textContent = formatMoney(result.performancePay);
     if (shiftAllowanceLine) shiftAllowanceLine.textContent = formatMoney(result.shiftAllowance);
     if (nightAllowanceLine) nightAllowanceLine.textContent = formatMoney(result.nightAllowance);
+}
+
+const salaryLineFieldMap = {
+    basePayLine: { configKey: 'basePay', label: '직무기준급' },
+    mealAllowanceLine: { configKey: 'mealAllowance', label: '중식비' },
+    selfDesignLine: { configKey: 'selfDesignSupport', label: '자기설계지원금' },
+    jobEnvironmentLine: { configKey: 'jobEnvironmentAllowance', label: '직무환경수당' },
+    performanceLine: { configKey: 'performancePayRate', label: '업적급율' },
+    shiftAllowanceLine: { configKey: 'shiftAllowanceRate', label: '교대수당율' },
+    nightAllowanceLine: { configKey: 'nightHourlyRate', label: '야간시급' }
+};
+
+function attachInlineSalaryEditing() {
+    const salaryRows = Array.from(document.querySelectorAll('#panel-salary .formula-row'));
+    salaryRows.forEach((row) => {
+        const line = row.querySelector('span:nth-child(2)');
+        if (!line) return;
+        const lineId = line.id;
+        const fieldDef = salaryLineFieldMap[lineId];
+        if (!fieldDef) return;
+
+        row.addEventListener('click', function () {
+            if (row.querySelector('input')) return;
+            const existingValue = salaryConfig[fieldDef.configKey] || 0;
+            const input = document.createElement('input');
+            input.type = 'number';
+            input.step = fieldDef.configKey.includes('Rate') ? '0.0001' : '1000';
+            input.value = String(existingValue);
+            input.className = 'inline-salary-edit';
+            line.replaceWith(input);
+            input.focus();
+
+            const saveSalaryInline = async () => {
+                const nextValue = Number(input.value || 0);
+                if (fieldDef.configKey === 'basePay') salaryConfig.basePay = nextValue;
+                if (fieldDef.configKey === 'mealAllowance') salaryConfig.mealAllowance = nextValue;
+                if (fieldDef.configKey === 'selfDesignSupport') salaryConfig.selfDesignSupport = nextValue;
+                if (fieldDef.configKey === 'jobEnvironmentAllowance') salaryConfig.jobEnvironmentAllowance = nextValue;
+                if (fieldDef.configKey === 'performancePayRate') salaryConfig.performancePayRate = nextValue;
+                if (fieldDef.configKey === 'shiftAllowanceRate') salaryConfig.shiftAllowanceRate = nextValue;
+                if (fieldDef.configKey === 'nightHourlyRate') salaryConfig.nightHourlyRate = nextValue;
+
+                const replacement = document.createElement('span');
+                replacement.id = lineId;
+                replacement.textContent = lineId === 'performanceLine' || lineId === 'shiftAllowanceLine' || lineId === 'nightAllowanceLine'
+                    ? formatMoney(nextValue)
+                    : formatMoney(nextValue);
+                input.replaceWith(replacement);
+                updateSalaryUI();
+                console.log('inlineSalaryEdit saved:', fieldDef.label, nextValue);
+                await saveSalaryConfigFromForm();
+            };
+
+            input.addEventListener('blur', saveSalaryInline);
+            input.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    saveSalaryInline();
+                }
+            });
+        });
+    });
 }
 
 function populateSalaryConfigForm(config) {
@@ -622,6 +801,11 @@ async function deleteAccount(accountId) {
         return false;
     }
 
+    if (!window.confirm('정말 삭제하시겠습니까?')) {
+        console.log('deleteAccount: user cancelled delete for accountId', accountId);
+        return false;
+    }
+
     try {
         const response = await fetch(`${supabaseUrl}/rest/v1/accounts?id=eq.${encodeURIComponent(accountId)}`, {
             method: 'DELETE',
@@ -633,13 +817,20 @@ async function deleteAccount(accountId) {
         });
 
         if (!response.ok) {
-            console.error('deleteAccount: delete failed with', response.status);
+            console.error('deleteAccount: delete failed with status', response.status);
+            if (response.status === 23503) {
+                window.alert('해당 계좌를 참조하는 거래내역이 있어 삭제할 수 없습니다. 먼저 거래를 정리해주세요.');
+            } else {
+                window.alert('계좌 삭제 중 오류가 발생했습니다.');
+            }
             return false;
         }
 
+        console.log('deleteAccount: successful delete account', accountId);
         return true;
     } catch (error) {
         console.error('deleteAccount: unexpected error:', error);
+        window.alert('계좌 삭제 중 오류가 발생했습니다.');
         return false;
     }
 }
@@ -770,18 +961,76 @@ if (balanceAdjustButton && balanceAdjustmentInput) {
 
 if (addAccountButton) {
     addAccountButton.addEventListener('click', async function () {
-        const name = prompt('추가할 계좌명을 입력하세요', '새 계좌');
-        if (!name || !name.trim()) {
-            return;
+        const settings = document.getElementById('panel-settings');
+        const existing = settings?.querySelector('#addAccountForm');
+        if (existing) {
+            existing.remove();
         }
 
-        const type = prompt('계좌 유형을 입력하세요 (예: 급여통장/저축/카드)', '급여통장');
-        const institution = prompt('금융기관명을 입력하세요', 'POSCO');
+        const form = document.createElement('div');
+        form.className = 'add-account-form';
+        form.id = 'addAccountForm';
+        form.innerHTML = `
+            <div class="add-account-row">
+                <label>계좌 이름</label>
+                <input type="text" id="addAccountName" placeholder="예: 공동 생활비 통장" />
+            </div>
+            <div class="add-account-row">
+                <label>소유자 선택</label>
+                <select id="addAccountOwner">
+                    <option value="${localStorage.getItem('poscohouse.ownerId') || 'self'}">로그인 사용자</option>
+                    <option value="선영">선영</option>
+                    <option value="진한">진한</option>
+                </select>
+            </div>
+            <div class="add-account-row">
+                <label>유형 선택</label>
+                <select id="addAccountType">
+                    <option value="급여통장">급여통장</option>
+                    <option value="저축">저축</option>
+                    <option value="카드">카드</option>
+                    <option value="생활비">생활비</option>
+                </select>
+            </div>
+            <div class="add-account-row">
+                <label>금융기관</label>
+                <input type="text" id="addAccountInstitution" placeholder="예: POSCO" />
+            </div>
+            <div class="add-account-actions">
+                <button type="button" id="confirmAddAccount">추가</button>
+                <button type="button" id="cancelAddAccount">취소</button>
+            </div>
+        `;
 
-        const rows = await addAccount(name.trim(), type || '급여통장', institution || 'POSCO');
-        if (Array.isArray(rows)) {
-            renderAccountsToSettings(rows);
+        const list = document.getElementById('settingsAccountList');
+        if (list) {
+            list.appendChild(form);
         }
+
+        const cancel = form.querySelector('#cancelAddAccount');
+        cancel.addEventListener('click', () => form.remove());
+
+        const confirm = form.querySelector('#confirmAddAccount');
+        confirm.addEventListener('click', async function () {
+            const name = form.querySelector('#addAccountName').value.trim();
+            const owner = form.querySelector('#addAccountOwner').value || 'self';
+            const type = form.querySelector('#addAccountType').value || '급여통장';
+            const institution = form.querySelector('#addAccountInstitution').value.trim() || 'POSCO';
+            if (!name) {
+                window.alert('계좌 이름을 입력해주세요.');
+                return;
+            }
+
+            console.log('addAccount requested:', { name, owner, type, institution });
+            const rows = await addAccount(name, type, institution);
+            if (Array.isArray(rows)) {
+                renderAccountsToSettings(rows);
+                form.remove();
+            } else {
+                console.error('addAccount: failed insert payload:', { name, owner, type, institution });
+                window.alert('계좌 추가 실패. RLS 또는 owner_id/필수 컬럼 제약을 확인하세요.');
+            }
+        });
     });
 }
 
