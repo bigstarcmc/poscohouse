@@ -269,9 +269,189 @@ function updateSalaryUI() {
     if (nightAllowanceLine) nightAllowanceLine.textContent = formatMoney(result.nightAllowance);
 }
 
+function populateSalaryConfigForm(config) {
+    if (!config) {
+        return;
+    }
+
+    const fields = {
+        salaryBasePayInput: config.basePay,
+        salaryMealAllowanceInput: config.mealAllowance,
+        salarySelfDesignSupportInput: config.selfDesignSupport,
+        salaryJobEnvironmentAllowanceInput: config.jobEnvironmentAllowance,
+        salaryShiftAllowanceRateInput: config.shiftAllowanceRate,
+        salaryPerformancePayRateInput: config.performancePayRate,
+        salaryManagementBonusRateInput: config.managementBonusRate,
+        salaryNightHourlyRateInput: config.nightHourlyRate
+    };
+
+    Object.entries(fields).forEach(([id, value]) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.value = value;
+        }
+    });
+}
+
+async function readCurrentSalaryConfigRowForProfile(ownerId) {
+    const query = new URLSearchParams({
+        select: 'id,base_pay,meal_allowance,self_design_support,job_environment_allowance,shift_allowance_rate,performance_pay_rate,management_bonus_rate,night_hourly_rate,effective_from',
+        owner_id: `eq.${ownerId}`,
+        order: 'effective_from.desc',
+        limit: '1'
+    });
+
+    const response = await fetch(`${supabaseUrl}/rest/v1/salary_config?${query.toString()}`, {
+        headers: {
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${supabaseAnonKey}`,
+            Accept: 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        return null;
+    }
+
+    const rows = await response.json();
+    if (!Array.isArray(rows) || rows.length === 0) {
+        return null;
+    }
+
+    const row = rows[0];
+    return row;
+}
+
+async function getProfileIdForName(name) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        return null;
+    }
+
+    try {
+        const query = new URLSearchParams({
+            select: 'id',
+            name: `eq.${name}`,
+            limit: '1'
+        });
+
+        const response = await fetch(`${supabaseUrl}/rest/v1/profiles?${query.toString()}`, {
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                Accept: 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const rows = await response.json();
+        if (!Array.isArray(rows) || rows.length === 0) {
+            return null;
+        }
+
+        return rows[0].id || null;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function saveSalaryConfigFromForm() {
+    if (!supabaseUrl || !supabaseAnonKey) {
+        if (salaryConfigSaveStatus) {
+            salaryConfigSaveStatus.textContent = 'Supabase 키가 없어 저장할 수 없습니다.';
+        }
+        return;
+    }
+
+    const profileId = await getProfileIdForName(salaryProfileName);
+    if (!profileId) {
+        if (salaryConfigSaveStatus) {
+            salaryConfigSaveStatus.textContent = '진한 프로필을 찾지 못했습니다.';
+        }
+        return;
+    }
+
+    const config = {
+        basePay: Number(document.getElementById('salaryBasePayInput').value || 0),
+        mealAllowance: Number(document.getElementById('salaryMealAllowanceInput').value || 0),
+        selfDesignSupport: Number(document.getElementById('salarySelfDesignSupportInput').value || 0),
+        jobEnvironmentAllowance: Number(document.getElementById('salaryJobEnvironmentAllowanceInput').value || 0),
+        shiftAllowanceRate: Number(document.getElementById('salaryShiftAllowanceRateInput').value || 0),
+        performancePayRate: Number(document.getElementById('salaryPerformancePayRateInput').value || 0),
+        managementBonusRate: Number(document.getElementById('salaryManagementBonusRateInput').value || 0),
+        nightHourlyRate: Number(document.getElementById('salaryNightHourlyRateInput').value || 0),
+        effectiveFrom: '2026-09-28'
+    };
+
+    const existingRow = await readCurrentSalaryConfigRowForProfile(profileId);
+    const payload = {
+        owner_id: profileId,
+        base_pay: config.basePay,
+        meal_allowance: config.mealAllowance,
+        self_design_support: config.selfDesignSupport,
+        job_environment_allowance: config.jobEnvironmentAllowance,
+        shift_allowance_rate: config.shiftAllowanceRate,
+        performance_pay_rate: config.performancePayRate,
+        management_bonus_rate: config.managementBonusRate,
+        night_hourly_rate: config.nightHourlyRate,
+        effective_from: config.effectiveFrom
+    };
+
+    try {
+        const method = existingRow ? 'PATCH' : 'POST';
+        const url = existingRow
+            ? `${supabaseUrl}/rest/v1/salary_config?id=eq.${encodeURIComponent(existingRow.id)}`
+            : `${supabaseUrl}/rest/v1/salary_config`;
+
+        const response = await fetch(url, {
+            method,
+            headers: {
+                apikey: supabaseAnonKey,
+                Authorization: `Bearer ${supabaseAnonKey}`,
+                'Content-Type': 'application/json',
+                Prefer: 'return=minimal',
+                Accept: 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            if (salaryConfigSaveStatus) {
+                salaryConfigSaveStatus.textContent = '저장 실패: Supabase 응답 오류';
+            }
+            return;
+        }
+
+        salaryConfig = {
+            basePay: config.basePay,
+            mealAllowance: config.mealAllowance,
+            selfDesignSupport: config.selfDesignSupport,
+            jobEnvironmentAllowance: config.jobEnvironmentAllowance,
+            shiftAllowanceRate: config.shiftAllowanceRate,
+            performancePayRate: config.performancePayRate,
+            managementBonusRate: config.managementBonusRate,
+            nightHourlyRate: config.nightHourlyRate,
+            effectiveFrom: config.effectiveFrom
+        };
+
+        updateSalaryUI();
+
+        if (salaryConfigSaveStatus) {
+            salaryConfigSaveStatus.textContent = '급여 설정 저장 완료';
+        }
+    } catch (error) {
+        if (salaryConfigSaveStatus) {
+            salaryConfigSaveStatus.textContent = '저장 실패';
+        }
+    }
+}
+
 const balanceValue = document.getElementById('currentBalanceValue');
 const balanceAdjustButton = document.getElementById('balanceAdjustButton');
 const balanceAdjustmentInput = document.getElementById('balanceAdjustmentInput');
+const salaryConfigSaveStatus = document.getElementById('salaryConfigSaveStatus');
 
 const balanceStorageKey = 'poscohouse.currentBalance';
 const defaultBalance = 512500;
@@ -421,8 +601,16 @@ async function initializeSalaryConfig() {
     const remoteConfig = await readSalaryConfigFromSupabase();
     if (remoteConfig) {
         salaryConfig = remoteConfig;
+        populateSalaryConfigForm(remoteConfig);
+    } else {
+        populateSalaryConfigForm(salaryConfig);
     }
     updateSalaryUI();
+}
+
+const saveSalaryConfigButton = document.getElementById('saveSalaryConfigButton');
+if (saveSalaryConfigButton) {
+    saveSalaryConfigButton.addEventListener('click', saveSalaryConfigFromForm);
 }
 
 initializeSalaryConfig();
