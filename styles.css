@@ -1243,6 +1243,52 @@ a {
     color: var(--green);
 }
 
+.balance-strip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 14px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    background: var(--sage);
+    border: 1px solid var(--line);
+}
+
+.balance-label {
+    color: var(--text-soft);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.balance-value {
+    color: var(--green-deep);
+    font-size: 22px;
+    font-weight: 900;
+}
+
+.balance-adjust {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.balance-adjust input {
+    width: 160px;
+    min-height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel-soft);
+    color: var(--text);
+    padding: 10px 12px;
+}
+
+.balance-adjust button {
+    min-height: 40px;
+    padding: 0 14px;
+}
+
 .transactions {
     margin-top: 20px;
 }

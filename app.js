@@ -196,6 +196,34 @@ function updateSalaryUI() {
     if (nightAllowanceLine) nightAllowanceLine.textContent = formatMoney(result.nightAllowance);
 }
 
+const balanceValue = document.getElementById('currentBalanceValue');
+const balanceAdjustButton = document.getElementById('balanceAdjustButton');
+const balanceAdjustmentInput = document.getElementById('balanceAdjustmentInput');
+
+function updateBalanceUI(value) {
+    if (balanceValue) {
+        const balance = Number(value) || 0;
+        balanceValue.textContent = new Intl.NumberFormat('ko-KR', {
+            style: 'currency',
+            currency: 'KRW',
+            maximumFractionDigits: 0
+        }).format(balance);
+    }
+}
+
+if (balanceAdjustButton && balanceAdjustmentInput) {
+    balanceAdjustButton.addEventListener('click', function () {
+        const change = Number(balanceAdjustmentInput.value) || 0;
+        const oldBalance = Number(localStorage.getItem('poscohouse.currentBalance') || '512500');
+        const nextBalance = oldBalance + change;
+        localStorage.setItem('poscohouse.currentBalance', String(nextBalance));
+        updateBalanceUI(nextBalance);
+    });
+}
+
+const storedBalance = Number(localStorage.getItem('poscohouse.currentBalance') || '512500');
+updateBalanceUI(storedBalance);
+
 updateSalaryUI();
 applyTeam(currentTeam);
 
