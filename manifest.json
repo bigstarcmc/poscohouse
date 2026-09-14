@@ -1,0 +1,17 @@
+{
+  "name": "POSCOHOUSE",
+  "short_name": "POSCOHOUSE",
+  "description": "POSCOHOUSE family finance and shift management application",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#eef3ee",
+  "theme_color": "#4a7a59",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
